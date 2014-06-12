@@ -16,3 +16,16 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # Pootle; if not, see <http://www.gnu.org/licenses/>.
+
+from django.conf import settings
+
+
+hpy_obj = None
+if settings.POOTLE_LOG_MEMORY_STATS:
+    try:
+        import guppy
+    except ImportError:
+        guppy = None
+
+    if guppy is not None:
+        hpy_obj = guppy.hpy()

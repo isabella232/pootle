@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-
+import os
 import logging
 
 
@@ -40,7 +40,7 @@ SCORE_CHANGED = 'SC'
 
 def log(message):
     logger = logging.getLogger('action')
-    logger.info(message)
+    logger.info("pid=%d\t%s" % (os.getpid(), message))
 
 
 def action_log(*args, **kwargs):

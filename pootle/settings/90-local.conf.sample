@@ -91,7 +91,6 @@ DATABASES = {
 
 # (these are the high-level logs of events on store/unit changes
 # and manage.py commands executed)
-
 LOGDIRECTORY = '/var/log/pootle'
 LOGGING = {
     'version': 1,

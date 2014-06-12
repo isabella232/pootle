@@ -22,6 +22,7 @@
 
 __all__ = ('TreeItem', 'CachedMethods',)
 
+
 from datetime import datetime
 from functools import wraps
 
@@ -30,20 +31,54 @@ from translate.filters.decorators import Category
 from django.core.cache import cache
 from django.utils.encoding import iri_to_uri
 
+from pootle_app import hpy_obj
 from pootle.core.log import log
 from pootle_misc.util import (getfromcache, dictsum, get_cached_value,
                               set_cached_value, datetime_min)
 from pootle_misc.checks import get_qualitychecks_by_category
 
 
+def bytes_to_mb(bytes):
+    return bytes * 1.0 / 1048576
+
 def statslog(function):
     @wraps(function)
     def _statslog(instance, *args, **kwargs):
-        start = datetime.now()
+        log_stat = kwargs.pop('log_stat', False)
+
+        if log_stat:
+            start = datetime.now()
+            params = {
+                'name': function.__name__,
+                'key': instance.get_cachekey(),
+            }
+            if hpy_obj is not None:
+                size = hpy_obj.heap().size
+                params.update({'total': bytes_to_mb(size)})
+
+                log('before %(name)s for %(key)s\t'
+                    'size=%(total)0.2fMb\t'
+                     % params)
+
         result = function(instance, *args, **kwargs)
-        end = datetime.now()
-        log("%s\t%s\t%s" % (function.__name__, end - start,
-                            instance.get_cachekey()))
+
+        if log_stat:
+            end = datetime.now()
+            params.update({'time': end - start,})
+            if hpy_obj is not None:
+                new_size = hpy_obj.heap().size
+                params.update({
+                    'total': bytes_to_mb(new_size),
+                    'delta': bytes_to_mb(new_size - size),
+                })
+
+                log('after %(name)s for %(key)s\t'
+                    'size=%(total)0.2fMb(%(delta)+0.2fMb)\t'
+                    'time=%(time)s'
+                    % params)
+            else:
+                log("%(name)s for %(key)s\ttime=%(time)s" % params)
+
         return result
     return _statslog
 
@@ -198,13 +233,13 @@ class TreeItem(object):
         self.initialize_children()
 
         result = {
-            'total': self.get_total_wordcount(),
-            'translated': self.get_translated_wordcount(),
-            'fuzzy': self.get_fuzzy_wordcount(),
-            'suggestions': self.get_suggestion_count(),
-            'lastaction': self.get_last_action(),
+            'total': self.get_total_wordcount(log_stat=True),
+            'translated': self.get_translated_wordcount(log_stat=True),
+            'fuzzy': self.get_fuzzy_wordcount(log_stat=True),
+            'suggestions': self.get_suggestion_count(log_stat=True),
+            'lastaction': self.get_last_action(log_stat=True),
             'critical': self.get_error_unit_count(),
-            'lastupdated': self.get_last_updated()
+            'lastupdated': self.get_last_updated(log_stat=True)
         }
 
         if include_children:
