@@ -21,6 +21,7 @@ from django.conf import settings
 
 
 hpy_obj = None
+
 if settings.POOTLE_LOG_MEMORY_STATS:
     try:
         import guppy

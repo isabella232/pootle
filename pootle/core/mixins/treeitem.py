@@ -22,6 +22,8 @@
 
 __all__ = ('TreeItem', 'CachedMethods',)
 
+import os
+import psutil
 
 from datetime import datetime
 from functools import wraps
@@ -53,11 +55,19 @@ def statslog(function):
                 'key': instance.get_cachekey(),
             }
             if hpy_obj is not None:
-                size = hpy_obj.heap().size
-                params.update({'total': bytes_to_mb(size)})
+                heap_size = hpy_obj.heap().size
+                heapu_size = hpy_obj.heapu().size
+                rss = psutil.Process(os.getpid()).memory_info().rss
+                params.update({
+                    'heap': bytes_to_mb(heap_size),
+                    'heapu': bytes_to_mb(heapu_size),
+                    'rss': bytes_to_mb(rss),
+                })
 
                 log('before %(name)s for %(key)s\t'
-                    'size=%(total)0.2fMb\t'
+                    'heap=%(heap)0.2fMb\t'
+                    'heapu=%(heapu)0.2fMb\t'
+                    'rss=%(rss)0.2fMb\t'
                      % params)
 
         result = function(instance, *args, **kwargs)
@@ -66,14 +76,22 @@ def statslog(function):
             end = datetime.now()
             params.update({'time': end - start,})
             if hpy_obj is not None:
-                new_size = hpy_obj.heap().size
+                new_heap_size = hpy_obj.heap().size
+                new_heapu_size = hpy_obj.heapu().size
+                new_rss = psutil.Process(os.getpid()).memory_info().rss
                 params.update({
-                    'total': bytes_to_mb(new_size),
-                    'delta': bytes_to_mb(new_size - size),
+                    'heap': bytes_to_mb(new_heap_size),
+                    'heap_delta': bytes_to_mb(new_heap_size - heap_size),
+                    'heapu': bytes_to_mb(new_heapu_size),
+                    'heapu_delta': bytes_to_mb(new_heapu_size - heapu_size),
+                    'rss': bytes_to_mb(new_rss),
+                    'rss_delta': bytes_to_mb(new_rss - rss),
                 })
 
                 log('after %(name)s for %(key)s\t'
-                    'size=%(total)0.2fMb(%(delta)+0.2fMb)\t'
+                    'heap=%(heap)0.2fMb(%(heap_delta)+0.2fMb)\t'
+                    'heapu=%(heapu)0.2fMb(%(heapu_delta)+0.2fMb)\t'
+                    'rss=%(rss)0.2fMb(%(rss_delta)+0.2fMb)\t'
                     'time=%(time)s'
                     % params)
             else:
