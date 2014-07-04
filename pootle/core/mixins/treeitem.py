@@ -256,7 +256,7 @@ class TreeItem(object):
             'fuzzy': self.get_fuzzy_wordcount(log_stat=True),
             'suggestions': self.get_suggestion_count(log_stat=True),
             'lastaction': self.get_last_action(log_stat=True),
-            'critical': self.get_error_unit_count(),
+            'critical': self.get_error_unit_count(log_stat=True),
             'lastupdated': self.get_last_updated(log_stat=True)
         }
 
@@ -300,8 +300,8 @@ class TreeItem(object):
 
         return result
 
-    def get_error_unit_count(self):
-        check_stats = self.get_checks()
+    def get_error_unit_count(self, log_stat=False):
+        check_stats = self.get_checks(log_stat=log_stat)
 
         return check_stats['unit_count']
 
